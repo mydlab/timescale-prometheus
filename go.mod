@@ -15,10 +15,12 @@ require (
 	github.com/jackc/pgproto3/v2 v2.0.1
 	github.com/jackc/pgx/v4 v4.4.1
 	github.com/jamiealquiza/envy v1.1.0
+	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.5.1
 	github.com/prometheus/client_model v0.2.0
 	github.com/prometheus/common v0.9.1
-	github.com/prometheus/prometheus v1.8.2-0.20200326161412-ae041f97cfc6
+	github.com/prometheus/prometheus v1.8.2-0.20200507164740-ecee9c8abfd1
 	github.com/spf13/cobra v0.0.7 // indirect
-	github.com/testcontainers/testcontainers-go v0.3.1
+	github.com/testcontainers/testcontainers-go v0.5.1
+	github.com/NYTimes/gziphandler v1.1.1
 )
