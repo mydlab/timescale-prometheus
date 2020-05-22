@@ -19,6 +19,7 @@ import (
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/prompb"
@@ -44,6 +45,8 @@ const (
 var (
 	copyColumns         = []string{"time", "value", "series_id"}
 	errMissingTableName = fmt.Errorf("missing metric table name")
+
+	ReadHist prometheus.ObserverVec
 )
 
 type pgxBatch interface {
@@ -88,6 +91,11 @@ func (p *pgxConnImpl) Exec(ctx context.Context, sql string, arguments ...interfa
 
 func (p *pgxConnImpl) Query(ctx context.Context, sql string, args ...interface{}) (pgx.Rows, error) {
 	conn := p.getConn()
+
+	defer func(start time.Time, hist prometheus.ObserverVec, path string) {
+		elapsedMs := float64(time.Since(start).Milliseconds())
+		hist.WithLabelValues(path).Observe(elapsedMs)
+	}(time.Now(), ReadHist, sql[0:6])
 
 	return conn.Query(ctx, sql, args...)
 }

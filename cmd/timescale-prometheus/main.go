@@ -122,6 +122,15 @@ var (
 		},
 		[]string{"path"},
 	)
+	ReadQueryLatency = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Namespace: promNamespace,
+			Name:      "query_latency_ms",
+			Help:      "Query latency in milliseconds",
+			Buckets:   []float64{5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000},
+		},
+		[]string{"query"},
+	)
 	writeThroughput     = util.NewThroughputCalc(tickInterval)
 	elector             *util.Elector
 	lastRequestUnixNano = time.Now().UnixNano()
@@ -137,10 +146,12 @@ func init() {
 	prometheus.MustRegister(sentBatchDuration)
 	prometheus.MustRegister(queryBatchDuration)
 	prometheus.MustRegister(httpRequestDuration)
+	prometheus.MustRegister(ReadQueryLatency)
 	writeThroughput.Start()
 }
 
 func main() {
+	pgmodel.ReadHist = ReadQueryLatency
 	cfg := parseFlags()
 	err := log.Init(cfg.logLevel)
 	if err != nil {
