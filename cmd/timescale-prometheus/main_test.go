@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/timescale/timescale-prometheus/pkg/api"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -420,7 +421,7 @@ func TestWrite(t *testing.T) {
 				err:    c.inserterErr,
 			}
 
-			handler := write(mock)
+			handler := api.write(mock)
 
 			test := GenerateHandleTester(t, handler)
 
