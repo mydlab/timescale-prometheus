@@ -45,8 +45,6 @@ const (
 var (
 	copyColumns         = []string{"time", "value", "series_id"}
 	errMissingTableName = fmt.Errorf("missing metric table name")
-
-	ReadHist prometheus.ObserverVec
 )
 
 type pgxBatch interface {
@@ -70,7 +68,8 @@ type MetricCache interface {
 }
 
 type pgxConnImpl struct {
-	conn *pgxpool.Pool
+	conn     *pgxpool.Pool
+	readHist prometheus.ObserverVec
 }
 
 func (p *pgxConnImpl) getConn() *pgxpool.Pool {
@@ -91,11 +90,12 @@ func (p *pgxConnImpl) Exec(ctx context.Context, sql string, arguments ...interfa
 
 func (p *pgxConnImpl) Query(ctx context.Context, sql string, args ...interface{}) (pgx.Rows, error) {
 	conn := p.getConn()
-
-	defer func(start time.Time, hist prometheus.ObserverVec, path string) {
-		elapsedMs := float64(time.Since(start).Milliseconds())
-		hist.WithLabelValues(path).Observe(elapsedMs)
-	}(time.Now(), ReadHist, sql[0:6])
+	if p.readHist != nil {
+		defer func(start time.Time, hist prometheus.ObserverVec, path string) {
+			elapsedMs := float64(time.Since(start).Milliseconds())
+			hist.WithLabelValues(path).Observe(elapsedMs)
+		}(time.Now(), p.readHist, sql[0:6])
+	}
 
 	return conn.Query(ctx, sql, args...)
 }
@@ -170,10 +170,11 @@ func (t *SampleInfoIterator) Err() error {
 
 // NewPgxIngestorWithMetricCache returns a new Ingestor that uses connection pool and a metrics cache
 // for caching metric table names.
-func NewPgxIngestorWithMetricCache(c *pgxpool.Pool, cache MetricCache) *DBIngestor {
+func NewPgxIngestorWithMetricCache(c *pgxpool.Pool, cache MetricCache, readHist prometheus.ObserverVec) *DBIngestor {
 
 	conn := &pgxConnImpl{
-		conn: c,
+		readHist: readHist,
+		conn:     c,
 	}
 
 	pi := newPgxInserter(conn, cache)
@@ -191,10 +192,10 @@ func NewPgxIngestorWithMetricCache(c *pgxpool.Pool, cache MetricCache) *DBIngest
 }
 
 // NewPgxIngestor returns a new Ingestor that write to PostgreSQL using PGX
-func NewPgxIngestor(c *pgxpool.Pool) *DBIngestor {
+func NewPgxIngestor(c *pgxpool.Pool, readHist prometheus.ObserverVec) *DBIngestor {
 	metrics, _ := bigcache.NewBigCache(DefaultCacheConfig())
 	cache := &MetricNameCache{metrics}
-	return NewPgxIngestorWithMetricCache(c, cache)
+	return NewPgxIngestorWithMetricCache(c, cache, readHist)
 }
 
 func newPgxInserter(conn pgxConn, cache MetricCache) *pgxInserter {
@@ -645,10 +646,11 @@ func (m *orderedMap) giveOldBuffer(buffer *pendingBuffer) {
 
 // NewPgxReaderWithMetricCache returns a new DBReader that reads from PostgreSQL using PGX
 // and caches metric table names using the supplied cacher.
-func NewPgxReaderWithMetricCache(c *pgxpool.Pool, cache MetricCache) *DBReader {
+func NewPgxReaderWithMetricCache(c *pgxpool.Pool, cache MetricCache, readHist prometheus.ObserverVec) *DBReader {
 	pi := &pgxQuerier{
 		conn: &pgxConnImpl{
-			conn: c,
+			conn:     c,
+			readHist: readHist,
 		},
 		metricTableNames: cache,
 	}
@@ -659,10 +661,10 @@ func NewPgxReaderWithMetricCache(c *pgxpool.Pool, cache MetricCache) *DBReader {
 }
 
 // NewPgxReader returns a new DBReader that reads that from PostgreSQL using PGX.
-func NewPgxReader(c *pgxpool.Pool) *DBReader {
+func NewPgxReader(c *pgxpool.Pool, readHist prometheus.ObserverVec) *DBReader {
 	metrics, _ := bigcache.NewBigCache(DefaultCacheConfig())
 	cache := &MetricNameCache{metrics}
-	return NewPgxReaderWithMetricCache(c, cache)
+	return NewPgxReaderWithMetricCache(c, cache, readHist)
 }
 
 type metricTimeRangeFilter struct {

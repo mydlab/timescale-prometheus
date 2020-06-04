@@ -44,7 +44,7 @@ func TestSQLRetentionPeriod(t *testing.T) {
 				},
 			},
 		}
-		ingestor := NewPgxIngestor(db)
+		ingestor := NewPgxIngestor(db, nil)
 		defer ingestor.Close()
 		_, err := ingestor.Ingest(ts)
 		if err != nil {
@@ -135,7 +135,7 @@ func TestSQLDropChunk(t *testing.T) {
 				},
 			},
 		}
-		ingestor := NewPgxIngestor(db)
+		ingestor := NewPgxIngestor(db, nil)
 		defer ingestor.Close()
 		_, err := ingestor.Ingest(ts)
 		if err != nil {
@@ -221,7 +221,7 @@ func TestSQLDropMetricChunk(t *testing.T) {
 				},
 			},
 		}
-		ingestor := NewPgxIngestor(db)
+		ingestor := NewPgxIngestor(db, nil)
 		defer ingestor.Close()
 		_, err := ingestor.Ingest(ts)
 		if err != nil {

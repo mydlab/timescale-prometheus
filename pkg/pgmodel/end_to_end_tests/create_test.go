@@ -132,7 +132,7 @@ func TestSQLChunkInterval(t *testing.T) {
 				},
 			},
 		}
-		ingestor := NewPgxIngestor(db)
+		ingestor := NewPgxIngestor(db, nil)
 		defer ingestor.Close()
 		_, err := ingestor.Ingest(ts)
 		if err != nil {
@@ -369,7 +369,7 @@ func TestSQLIngest(t *testing.T) {
 		t.Run(c.name, func(t *testing.T) {
 			t.Parallel()
 			withDB(t, databaseName, func(db *pgxpool.Pool, t testing.TB) {
-				ingestor := NewPgxIngestor(db)
+				ingestor := NewPgxIngestor(db, nil)
 				defer ingestor.Close()
 				cnt, err := ingestor.Ingest(tcase.metrics)
 				if cnt != tcase.count {

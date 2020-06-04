@@ -5,6 +5,8 @@ package pgmodel
 
 import (
 	"fmt"
+	"github.com/prometheus/prometheus/pkg/labels"
+	"github.com/prometheus/prometheus/storage"
 	"reflect"
 	"testing"
 
@@ -17,7 +19,11 @@ type mockQuerier struct {
 	healthCheckCalled bool
 }
 
-func (q *mockQuerier) Query(query *prompb.Query) ([]*prompb.TimeSeries, error) {
+func (q *mockQuerier) Select(int64, int64, bool, *storage.SelectHints, ...*labels.Matcher) (storage.SeriesSet, storage.Warnings, error) {
+	panic("implement me")
+}
+
+func (q *mockQuerier) Query(*prompb.Query) ([]*prompb.TimeSeries, error) {
 	return q.tts, q.err
 }
 

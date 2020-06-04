@@ -28,7 +28,7 @@ const (
 	subQueryNRE           = "labels && (SELECT COALESCE(array_agg(l.id), array[]::int[]) FROM _prom_catalog.label l WHERE l.key = $%d and l.value !~ $%d)"
 	subQueryNREMatchEmpty = "NOT labels && (SELECT COALESCE(array_agg(l.id), array[]::int[]) FROM _prom_catalog.label l WHERE l.key = $%d and l.value ~ $%d)"
 
-	metricNameSeriesIDSQLFormat = `sELECT m.metric_name, array_agg(s.id)
+	metricNameSeriesIDSQLFormat = `SELECT m.metric_name, array_agg(s.id)
 	FROM _prom_catalog.series s
 	INNER JOIN _prom_catalog.metric m
 	ON (m.id = s.metric_id)
@@ -36,7 +36,7 @@ const (
 	GROUP BY m.metric_name
 	ORDER BY m.metric_name`
 
-	timeseriesByMetricSQLFormat = `seLECT (key_value_array(s.labels)).*, array_agg(m.time ORDER BY time), array_agg(m.value ORDER BY time)
+	timeseriesByMetricSQLFormat = `SELECT (key_value_array(s.labels)).*, array_agg(m.time ORDER BY time), array_agg(m.value ORDER BY time)
 	FROM %[1]s m
 	INNER JOIN %[2]s s
 	ON m.series_id = s.id
@@ -45,7 +45,7 @@ const (
 	AND time <= '%[5]s'
 	GROUP BY s.id`
 
-	timeseriesBySeriesIDsSQLFormat = `selECT (key_value_array(s.labels)).*, array_agg(m.time ORDER BY time), array_agg(m.value ORDER BY time)
+	timeseriesBySeriesIDsSQLFormat = `SELECT (key_value_array(s.labels)).*, array_agg(m.time ORDER BY time), array_agg(m.value ORDER BY time)
 	FROM %[1]s m
 	INNER JOIN %[2]s s
 	ON m.series_id = s.id

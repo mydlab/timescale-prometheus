@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/timescale/timescale-prometheus/pkg/api"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -104,17 +103,6 @@ type mockReader struct {
 func (m *mockReader) Read(r *prompb.ReadRequest) (*prompb.ReadResponse, error) {
 	m.request = r
 	return m.response, m.err
-}
-
-type mockInserter struct {
-	ts     []prompb.TimeSeries
-	result uint64
-	err    error
-}
-
-func (m *mockInserter) Ingest(ts []prompb.TimeSeries) (uint64, error) {
-	m.ts = ts
-	return m.result, m.err
 }
 
 type mockElection struct {
@@ -272,11 +260,6 @@ func readRequestToString(r *prompb.ReadRequest) string {
 	return string(snappy.Encode(nil, data))
 }
 
-func writeRequestToString(r *prompb.WriteRequest) string {
-	data, _ := proto.Marshal(r)
-	return string(snappy.Encode(nil, data))
-}
-
 func getReader(s string) io.Reader {
 	var r io.Reader = strings.NewReader(s)
 	if s == "" {
@@ -341,105 +324,6 @@ func TestRead(t *testing.T) {
 
 			if w.Code != c.responseCode {
 				t.Errorf("Unexpected HTTP status code received: got %d wanted %d", w.Code, c.responseCode)
-			}
-		})
-	}
-}
-
-func TestWrite(t *testing.T) {
-	testCases := []struct {
-		name             string
-		responseCode     int
-		requestBody      string
-		inserterResponse uint64
-		inserterErr      error
-		isLeader         bool
-		electionErr      error
-	}{
-		{
-			name:         "write request body error",
-			isLeader:     true,
-			responseCode: http.StatusInternalServerError,
-		},
-		{
-			name:         "malformed compression data",
-			isLeader:     true,
-			responseCode: http.StatusBadRequest,
-			requestBody:  "123",
-		},
-		{
-			name:         "malformed write request",
-			isLeader:     true,
-			responseCode: http.StatusBadRequest,
-			requestBody:  string(snappy.Encode(nil, []byte("test"))),
-		},
-		{
-			name:         "write error",
-			isLeader:     true,
-			responseCode: http.StatusInternalServerError,
-			inserterErr:  fmt.Errorf("some error"),
-			requestBody: writeRequestToString(
-				&prompb.WriteRequest{},
-			),
-		},
-		{
-			name:         "elector error",
-			electionErr:  fmt.Errorf("some error"),
-			responseCode: http.StatusOK,
-		},
-		{
-			name:         "not a leader",
-			responseCode: http.StatusOK,
-		},
-		{
-			name:             "happy path",
-			isLeader:         true,
-			responseCode:     http.StatusOK,
-			inserterResponse: 3,
-			requestBody: writeRequestToString(
-				&prompb.WriteRequest{
-					Timeseries: []prompb.TimeSeries{
-						{},
-					},
-				},
-			),
-		},
-	}
-
-	for _, c := range testCases {
-		t.Run(c.name, func(t *testing.T) {
-			elector = util.NewElector(
-				&mockElection{
-					isLeader: c.isLeader,
-					err:      c.electionErr,
-				},
-			)
-			mockGauge := &mockGauge{}
-			leaderGauge = mockGauge
-			mock := &mockInserter{
-				result: c.inserterResponse,
-				err:    c.inserterErr,
-			}
-
-			handler := api.write(mock)
-
-			test := GenerateHandleTester(t, handler)
-
-			w := test("GET", getReader(c.requestBody))
-
-			if w.Code != c.responseCode {
-				t.Errorf("Unexpected HTTP status code received: got %d wanted %d", w.Code, c.responseCode)
-			}
-
-			if c.electionErr != nil && mockGauge.value != 0 {
-				t.Errorf("leader gauge metric not set correctly: got %f when election returns an error", mockGauge.value)
-			}
-
-			switch {
-			case c.isLeader && mockGauge.value != 1:
-				t.Errorf("leader gauge metric not set correctly: got %f when is leader", mockGauge.value)
-			case !c.isLeader && mockGauge.value != 0:
-				t.Errorf("leader gauge metric not set correctly: got %f when is not leader", mockGauge.value)
 			}
 		})
 	}

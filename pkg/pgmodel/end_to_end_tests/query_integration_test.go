@@ -523,7 +523,7 @@ func TestSQLQuery(t *testing.T) {
 			t.Fatalf("Cannot run test, not an instance of testing.T")
 		}
 
-		r := NewPgxReader(readOnly)
+		r := NewPgxReader(readOnly, nil)
 		for _, c := range testCases {
 			tester.Run(c.name, func(t *testing.T) {
 				resp, err := r.Read(&c.readRequest)
@@ -550,7 +550,7 @@ func createQueryResult(ts []*prompb.TimeSeries) []*prompb.QueryResult {
 }
 
 func ingestQueryTestDataset(db *pgxpool.Pool, t testing.TB, metrics []prompb.TimeSeries) {
-	ingestor := NewPgxIngestor(db)
+	ingestor := NewPgxIngestor(db, nil)
 	cnt, err := ingestor.Ingest(metrics)
 
 	if err != nil {
@@ -901,7 +901,7 @@ func TestPromQL(t *testing.T) {
 			return
 		}
 
-		r := NewPgxReader(readOnly)
+		r := NewPgxReader(readOnly, nil)
 		for _, c := range testCases {
 			tester.Run(c.name, func(t *testing.T) {
 				connResp, connErr := r.Read(c.readRequest)

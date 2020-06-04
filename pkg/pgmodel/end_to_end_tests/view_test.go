@@ -144,7 +144,7 @@ func TestSQLView(t *testing.T) {
 			},
 		}
 
-		ingestor := NewPgxIngestor(db)
+		ingestor := NewPgxIngestor(db, nil)
 		defer ingestor.Close()
 		_, err := ingestor.Ingest(metrics)
 
@@ -239,7 +239,7 @@ func TestSQLViewSelectors(t *testing.T) {
 			},
 		}
 
-		ingestor := NewPgxIngestor(db)
+		ingestor := NewPgxIngestor(db, nil)
 		defer ingestor.Close()
 		_, err := ingestor.Ingest(metrics)
 

@@ -150,7 +150,6 @@ func init() {
 }
 
 func main() {
-	pgmodel.ReadHist = ReadQueryLatency
 	cfg := parseFlags()
 	err := log.Init(cfg.logLevel)
 	if err != nil {
@@ -188,7 +187,7 @@ func main() {
 
 	// client has to be initiated after migrate since migrate
 	// can change database GUC settings
-	client, err := pgclient.NewClient(&cfg.pgmodelCfg)
+	client, err := pgclient.NewClient(&cfg.pgmodelCfg, ReadQueryLatency)
 	if err != nil {
 		log.Error(util.MaskPassword(err.Error()))
 		os.Exit(1)
