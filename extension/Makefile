@@ -17,6 +17,9 @@ SRCS = \
 OBJS = $(SRCS:.c=.o)
 DEPS = $(SRCS:.c=.d)
 
+OBJS += rust/target/release/libtimescale_prometheus_extra_rs.a
+DEPS += rust/target/release/libtimescale_prometheus_extra_rs.d
+
 MKFILE_PATH := $(abspath $(MAKEFILE_LIST))
 CURRENT_DIR = $(dir $(MKFILE_PATH))
 
@@ -37,6 +40,8 @@ REGRESS_OPTS = \
 
 PGXS := $(shell $(PG_CONFIG) --pgxs)
 
+RUST_PG_INCLUDE := $(shell $(PG_CONFIG)  --includedir-server)
+
 EXTRA_CLEAN = $(EXT_SQL_FILE) $(DEPS)
 
 DOCKER_IMAGE_NAME=timescale_prometheus_extra
@@ -47,13 +52,16 @@ override CFLAGS += -DINCLUDE_PACKAGE_SUPPORT=0 -MMD
 override pg_regress_clean_files = test/results/ test/regression.diffs test/regression.out tmp_check/ log/
 -include $(DEPS)
 
-all: $(EXT_SQL_FILE)
+all: $(EXT_SQL_FILE) rust/target/release/libtimescale_prometheus_extra_rs.a
 
 $(EXT_SQL_FILE): $(SQL_FILES)
 	@cat $^ > $@
 
 check-sql-files:
 	@echo $(SQL_FILES)
+
+rust/target/release/libtimescale_prometheus_extra_rs.a: rust/Cargo.toml rust/src/*
+	cd rust && cargo build --release
 
 install: $(EXT_SQL_FILE)
 

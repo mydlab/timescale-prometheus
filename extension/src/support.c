@@ -16,6 +16,17 @@ PG_MODULE_MAGIC;
 #endif
 
 PG_FUNCTION_INFO_V1(make_call_subquery_support);
+PG_FUNCTION_INFO_V1(gapfill_delta_transition);
+PG_FUNCTION_INFO_V1(gapfill_delta_final);
+
+/* linker hack to make sure the rust code is actually linked in */
+Datum _ensure_functions_link(PG_FUNCTION_ARGS);
+Datum
+_ensure_functions_link(PG_FUNCTION_ARGS)
+{
+	gapfill_delta_transition(fcinfo);
+	return gapfill_delta_final(fcinfo);
+}
 
 static bool
 arg_can_be_put_into_subquery(Node *arg) {

@@ -1,0 +1,16 @@
+[package]
+name = "timescale_prometheus_extra_rs"
+version = "0.1.0"
+authors = ["Joshua Lockerman <josh@timescale.com>"]
+edition = "2018"
+
+[lib]
+crate-type = ["staticlib"]
+
+[dependencies.ts-extend]
+git = "https://github.com/JLockerman/ts-extend-rs"
+branch = "master"
+#features = ["postgres-12"]
+
+[profile.release]
+lto = true
