@@ -3,6 +3,8 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/prometheus/client_golang/prometheus"
+	dto "github.com/prometheus/client_model/go"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -10,14 +12,6 @@ import (
 	"reflect"
 	"strings"
 	"testing"
-	"testing/iotest"
-
-	"github.com/gogo/protobuf/proto"
-	"github.com/golang/snappy"
-
-	"github.com/prometheus/client_golang/prometheus"
-	dto "github.com/prometheus/client_model/go"
-	"github.com/prometheus/prometheus/prompb"
 
 	"github.com/timescale/timescale-prometheus/pkg/log"
 	"github.com/timescale/timescale-prometheus/pkg/pgclient"
@@ -92,17 +86,6 @@ type mockObserver struct {
 
 func (m *mockObserver) Observe(v float64) {
 	m.values = append(m.values, v)
-}
-
-type mockReader struct {
-	request  *prompb.ReadRequest
-	response *prompb.ReadResponse
-	err      error
-}
-
-func (m *mockReader) Read(r *prompb.ReadRequest) (*prompb.ReadResponse, error) {
-	m.request = r
-	return m.response, m.err
 }
 
 type mockElection struct {
@@ -252,80 +235,6 @@ func TestTimeHandler(t *testing.T) {
 
 	if mockHandler.r == nil {
 		t.Errorf("Did not call HTTP handler")
-	}
-}
-
-func readRequestToString(r *prompb.ReadRequest) string {
-	data, _ := proto.Marshal(r)
-	return string(snappy.Encode(nil, data))
-}
-
-func getReader(s string) io.Reader {
-	var r io.Reader = strings.NewReader(s)
-	if s == "" {
-		r = iotest.TimeoutReader(r)
-		_, _ = r.Read([]byte{})
-	}
-	return r
-}
-
-func TestRead(t *testing.T) {
-	testCases := []struct {
-		name           string
-		responseCode   int
-		requestBody    string
-		readerResponse *prompb.ReadResponse
-		readerErr      error
-	}{
-		{
-			name:         "read request body error",
-			responseCode: http.StatusInternalServerError,
-		},
-		{
-			name:         "malformed compression data",
-			responseCode: http.StatusBadRequest,
-			requestBody:  "123",
-		},
-		{
-			name:         "malformed read request",
-			responseCode: http.StatusBadRequest,
-			requestBody:  string(snappy.Encode(nil, []byte("test"))),
-		},
-		{
-			name:         "reader error",
-			responseCode: http.StatusInternalServerError,
-			readerErr:    fmt.Errorf("some error"),
-			requestBody: readRequestToString(
-				&prompb.ReadRequest{},
-			),
-		},
-		{
-			name:           "happy path",
-			responseCode:   http.StatusOK,
-			readerResponse: &prompb.ReadResponse{},
-			requestBody: readRequestToString(
-				&prompb.ReadRequest{},
-			),
-		},
-	}
-
-	for _, c := range testCases {
-		t.Run(c.name, func(t *testing.T) {
-			mockReader := &mockReader{
-				response: c.readerResponse,
-				err:      c.readerErr,
-			}
-
-			handler := read(mockReader)
-
-			test := GenerateHandleTester(t, handler)
-
-			w := test("GET", getReader(c.requestBody))
-
-			if w.Code != c.responseCode {
-				t.Errorf("Unexpected HTTP status code received: got %d wanted %d", w.Code, c.responseCode)
-			}
-		})
 	}
 }
 

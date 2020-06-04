@@ -12,5 +12,8 @@ type Metrics struct {
 	SentSamples         prometheus.Counter
 	SentBatchDuration   prometheus.Histogram
 	WriteThroughput     *util.ThroughputCalc
+	ReceivedQueries     prometheus.Counter
+	FailedQueries       prometheus.Counter
+	QueryBatchDuration  prometheus.Histogram
 	LastRequestUnixNano int64
 }
