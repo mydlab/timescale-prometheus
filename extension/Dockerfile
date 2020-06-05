@@ -14,7 +14,8 @@ RUN set -ex \
                 util-linux-dev \
                 clang \
 		        llvm \
-                git
+                git \
+                rust cargo
 RUN set -ex \
     && git clone  --branch v1.9 --depth 1 \
          https://github.com/dimitri/pgextwlist.git /pgextwlist \
@@ -26,9 +27,12 @@ RUN set -ex \
 
 COPY timescale_prometheus_extra.control Makefile /build/timescale-prometheus/
 COPY src/*.c src/*.h /build/timescale-prometheus/src/
+COPY rust/Cargo.* /build/timescale-prometheus/rust/
+COPY rust/src/*.rs /build/timescale-prometheus/rust/src/
 COPY sql/timescale-prometheus.sql /build/timescale-prometheus/sql/
 
 RUN set -ex \
+    && make -C /build/timescale-prometheus rust \
     && make -C /build/timescale-prometheus install \
     \
     && apk del .build-deps \

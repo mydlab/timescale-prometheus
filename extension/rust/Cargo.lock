@@ -3,7 +3,7 @@
 [[package]]
 name = "postgres-headers-rs"
 version = "0.1.0"
-source = "git+https://github.com/JLockerman/ts-extend-rs#d67fe297c943f484e20a6d81e3bb6a88ca24302a"
+source = "git+https://github.com/JLockerman/ts-extend-rs#427efded8ae380b97ac6b98f08b0cd979a5c84e7"
 
 [[package]]
 name = "timescale_prometheus_extra_rs"
@@ -15,7 +15,7 @@ dependencies = [
 [[package]]
 name = "ts-extend"
 version = "0.1.0"
-source = "git+https://github.com/JLockerman/ts-extend-rs#d67fe297c943f484e20a6d81e3bb6a88ca24302a"
+source = "git+https://github.com/JLockerman/ts-extend-rs#427efded8ae380b97ac6b98f08b0cd979a5c84e7"
 dependencies = [
  "postgres-headers-rs",
 ]

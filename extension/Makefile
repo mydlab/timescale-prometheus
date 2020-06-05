@@ -17,8 +17,9 @@ SRCS = \
 OBJS = $(SRCS:.c=.o)
 DEPS = $(SRCS:.c=.d)
 
-OBJS += rust/target/release/libtimescale_prometheus_extra_rs.a
 DEPS += rust/target/release/libtimescale_prometheus_extra_rs.d
+
+SHLIB_LINK_INTERNAL = rust/target/release/libtimescale_prometheus_extra_rs.a
 
 MKFILE_PATH := $(abspath $(MAKEFILE_LIST))
 CURRENT_DIR = $(dir $(MKFILE_PATH))
@@ -60,6 +61,8 @@ $(EXT_SQL_FILE): $(SQL_FILES)
 check-sql-files:
 	@echo $(SQL_FILES)
 
+rust: rust/target/release/libtimescale_prometheus_extra_rs.a
+
 rust/target/release/libtimescale_prometheus_extra_rs.a: rust/Cargo.toml rust/src/*
 	cd rust && cargo build --release
 
@@ -80,4 +83,4 @@ docker-push: docker-image
 	docker push $(ORGANIZATION)/$(EXTENSION):latest-$(PG_VER)
 	docker push $(ORGANIZATION)/$(EXTENSION):${EXT_VERSION}-$(PG_VER)
 
-.PHONY: check-sql-files all docker-image docker-push
+.PHONY: check-sql-files all docker-image docker-push rust
