@@ -57,8 +57,13 @@ pg_fn!{
             in_context(agg_ctx, || {
                 let state = state.map(|s| &mut *s).unwrap_or_else(|| {
                     let expected_deltas = ((greatest_time - lowest_time) / (step_size * USECS_PER_SEC)) + 1;
-                    let state = GapfillDeltaTransition::new(expected_deltas as _, greatest_time, window_size, step_size)
-                        .into();
+                    let state = GapfillDeltaTransition::new(
+                        expected_deltas as _,
+                        lowest_time,
+                        greatest_time,
+                        window_size,
+                        step_size
+                    ).into();
                     Box::leak(state)
                 });
 
@@ -96,10 +101,11 @@ struct GapfillDeltaTransition {
     current_window_max: TimestampTz,
     current_window_min: TimestampTz,
     step_size: TimestampTz,
+    lowest_time: TimestampTz,
 }
 
 impl GapfillDeltaTransition {
-    pub fn new(expected_deltas: usize, greatest_time: TimestampTz, window_size: Seconds, step_size: Seconds)
+    pub fn new(expected_deltas: usize, lowest_time: TimestampTz, greatest_time: TimestampTz, window_size: Seconds, step_size: Seconds)
     -> Self {
         GapfillDeltaTransition{
             window: VecDeque::default(),
@@ -108,6 +114,7 @@ impl GapfillDeltaTransition {
             current_window_max: greatest_time,
             current_window_min: greatest_time - window_size*USECS_PER_SEC,
             step_size: step_size*USECS_PER_SEC,
+            lowest_time,
         }
     }
 
@@ -142,14 +149,16 @@ impl GapfillDeltaTransition {
             .for_each(|_|())
     }
 
-    pub fn to_pg_array(&mut self) -> *mut ArrayType{
-        self.flush_current_window();
+    pub fn to_pg_array(&mut self) -> *mut ArrayType {
+        while self.current_window_max > self.lowest_time {
+            self.flush_current_window();
+        }
         unsafe {
             construct_md_array(
                 self.deltas.as_mut_ptr(),
                 self.nulls.as_mut_ptr(),
                 1,
-                &mut (self.deltas.len() as _),
+                &mut (self.nulls.len() as _),
                 &mut 1,
                 FLOAT8OID,
                 size_of::<f64>() as _,
